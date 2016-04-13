@@ -21,9 +21,14 @@ import com.amazonaws.services.lambda.model.GetFunctionConfigurationResult;
 
 public class LambdaUtils {
 
-    public static String getLambdaDescription(String region, String lambdaFunction) {
+    private LambdaUtils() {}
+
+    public static AWSLambdaClient getAwsLambdaClientForRegion(String region) {
+        return new AWSLambdaClient().withRegion(Regions.fromName(region));
+    }
+
+    public static String getLambdaDescription(AWSLambdaClient client, String lambdaFunction) {
         GetFunctionConfigurationRequest request = new GetFunctionConfigurationRequest().withFunctionName(lambdaFunction);
-        AWSLambdaClient client = new AWSLambdaClient().withRegion(Regions.fromName(region));
         GetFunctionConfigurationResult result = client.getFunctionConfiguration(request);
         return result.getDescription();
     }

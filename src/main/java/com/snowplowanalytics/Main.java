@@ -14,6 +14,7 @@
  */
 package com.snowplowanalytics;
 
+import com.amazonaws.services.lambda.AWSLambdaClient;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -33,6 +34,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -42,19 +44,24 @@ public class Main {
 
     public static final Object isFinishedSending = new Object();
 
-    public void trackEvents(String url, List<SelfDescribingJson> events, String namespace) {
+    public static HttpClientAdapter getClient(String url) {
         OkHttpClient client = new OkHttpClient();
 
         client.setConnectTimeout(5, TimeUnit.SECONDS);
         client.setReadTimeout(5, TimeUnit.SECONDS);
         client.setWriteTimeout(5, TimeUnit.SECONDS);
 
-        HttpClientAdapter adapter = OkHttpClientAdapter.builder()
+        return OkHttpClientAdapter.builder()
                 .url(url)
                 .httpClient(client)
                 .build();
+    }
+
+    public void trackEvents(HttpClientAdapter adapter, List<SelfDescribingJson> events, String namespace) {
 
         final long expectedSuccesses = events.size();
+        final AtomicInteger failureCount = new AtomicInteger();
+
         Emitter emitter = BatchEmitter.builder()
                 .httpClientAdapter(adapter)
                 .requestCallback(new RequestCallback() {
@@ -76,8 +83,8 @@ public class Main {
                             synchronized (isFinishedSending) {
                                 isFinishedSending.notify();
                             }
-
                         }
+                        failureCount.getAndAdd(failedEvents.size());
                     }
                 })
                 .bufferSize(events.size())
@@ -100,6 +107,11 @@ public class Main {
         {
             throw new IllegalStateException(e);
         }
+
+        if (failureCount.get() > 0)
+        {
+            throw new RuntimeException("Failed to send " + failureCount + " events to collector!");
+        }
     }
 
     public static SelfDescribingJson toEvent(String schema, Object event) {
@@ -107,11 +119,15 @@ public class Main {
     }
 
     public static String getRegion(String arn) {
+
+        if (arn==null||arn.trim().isEmpty())
+            throw new IllegalArgumentException("Cannot extract region from empty ARN");
+
         String region;
         try {
             region = arn.split(":")[3];
         } catch (Exception e){
-            throw new IllegalStateException("Couldn't get region from invoked arn" + arn, e);
+            throw new IllegalArgumentException("Couldn't get region from ARN '" + arn + "'", e);
         }
 
         return region;
@@ -125,7 +141,8 @@ public class Main {
                 .collect(Collectors.toList());
 
         String region = getRegion(context.getInvokedFunctionArn());
-        String collectorUrl = LambdaUtils.getLambdaDescription(region, context.getFunctionName());
+        AWSLambdaClient awsLambdaClient = LambdaUtils.getAwsLambdaClientForRegion(region);
+        String collectorUrl = LambdaUtils.getLambdaDescription(awsLambdaClient, context.getFunctionName());
 
         try {
             new URL(collectorUrl);
@@ -133,6 +150,6 @@ public class Main {
             throw new IllegalStateException("Collector URL in lambda description is invalid - '" + collectorUrl + "'", e);
         }
 
-        trackEvents(collectorUrl, events, APP_ID);
+        trackEvents(getClient(collectorUrl), events, APP_ID);
     }
 }

@@ -2,6 +2,7 @@ group 'com.snowplowanalytics'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'jacoco'
 
 repositories {
     mavenCentral()
@@ -19,6 +20,7 @@ dependencies {
     compile 'com.squareup.okhttp3:okhttp:3.2.0'
     compile 'com.snowplowanalytics:snowplow-java-tracker:0.8.0'
     testCompile 'junit:junit:4.12'
+    testCompile "org.mockito:mockito-core:1.+"
 }
 
 task buildZip(type: Zip) {

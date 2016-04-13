@@ -1,8 +1,18 @@
 group 'com.snowplowanalytics'
-version '1.0-SNAPSHOT'
+version '0.1.1'
 
 apply plugin: 'java'
 apply plugin: 'jacoco'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
+    }
+}
+apply plugin: 'com.jfrog.bintray'
 
 repositories {
     mavenCentral()
@@ -30,3 +40,25 @@ task buildZip(type: Zip) {
         from configurations.runtime
     }
 }
+
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+
+    pkg {
+        repo = 'generic-test'
+        name = 'snowplow-aws-lambda-source'
+        desc = 'AWS Lambda Function for sending AWS event sources as Snowplow events'
+        // userOrg = 'com.snowplowanalytics' fixme later
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/snowplow/snowplow-aws-lambda-source'
+    }
+
+    filesSpec {
+        from './build/distributions/'
+        into '.'
+        rename { filename -> filename.replace(/-/, '_') }
+    }
+}
+
+bintrayUpload.dependsOn { buildZip }

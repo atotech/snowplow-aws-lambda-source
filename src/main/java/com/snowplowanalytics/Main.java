@@ -29,7 +29,6 @@ import com.snowplowanalytics.snowplow.tracker.http.OkHttpClientAdapter;
 import com.snowplowanalytics.snowplow.tracker.payload.SelfDescribingJson;
 import com.snowplowanalytics.snowplow.tracker.payload.TrackerPayload;
 import com.squareup.okhttp.OkHttpClient;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
@@ -39,7 +38,7 @@ import java.util.stream.Collectors;
 public class Main {
 
     public static final String APP_ID = "s3-monitor-lambda";
-    public static final String SCHEMA = "iglu:com.banana/example/jsonschema/1-0-0";
+    public static final String SCHEMA = "iglu:com.amazon.aws.lambda/s3_notification_event/jsonschema/1-0-0";
 
     public static final Object isFinishedSending = new Object();
 
@@ -124,17 +123,6 @@ public class Main {
                 .stream()
                 .map(x -> toEvent(SCHEMA, x))
                 .collect(Collectors.toList());
-
-        ObjectMapper m = new ObjectMapper();
-        s3event.getRecords().stream().forEach(event -> {
-            String eventJson = null;
-            try {
-                eventJson = m.writeValueAsString(event);
-            } catch (JsonProcessingException e) {
-                throw new IllegalStateException(e);
-            }
-            context.getLogger().log(eventJson);
-        }); // debug
 
         String region = getRegion(context.getInvokedFunctionArn());
         String collectorUrl = LambdaUtils.getLambdaDescription(region, context.getFunctionName());

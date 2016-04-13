@@ -1,0 +1,30 @@
+group 'com.snowplowanalytics'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+    maven {
+        url "http://maven.snplow.com/releases"
+    }
+}
+
+dependencies {
+    compile 'com.amazonaws:aws-lambda-java-core:1.1.0'
+    compile 'com.amazonaws:aws-lambda-java-events:1.1.0'
+    compile 'com.amazonaws:aws-java-sdk-s3:1.10.69'
+    compile 'com.amazonaws:aws-java-sdk-lambda:1.10.69'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.7.3'
+    compile 'com.squareup.okhttp3:okhttp:3.2.0'
+    compile 'com.snowplowanalytics:snowplow-java-tracker:0.8.0'
+    testCompile 'junit:junit:4.12'
+}
+
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources
+    into('lib') {
+        from configurations.runtime
+    }
+}

@@ -51,4 +51,5 @@ public class LambdaUtilsTest {
         verify(mockClient).getFunctionConfiguration(expected);
         assertEquals("http://snowplowanalytics.com", desc);
     }
+
 }

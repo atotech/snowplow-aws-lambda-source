@@ -30,7 +30,7 @@ dependencies {
     compile 'com.squareup.okhttp3:okhttp:3.2.0'
     compile 'com.snowplowanalytics:snowplow-java-tracker:0.8.0'
     testCompile 'junit:junit:4.12'
-    testCompile "org.mockito:mockito-core:1.+"
+    testCompile 'org.mockito:mockito-core:1.+'
 }
 
 task buildZip(type: Zip) {
@@ -52,6 +52,8 @@ bintray {
         // userOrg = 'com.snowplowanalytics' fixme later
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/snowplow/snowplow-aws-lambda-source'
+        websiteUrl = 'https://github.com/snowplow/snowplow-aws-lambda-source'
+        issueTrackerUrl = 'https://github.com/snowplow/snowplow-aws-lambda-source/issues'
     }
 
     filesSpec {
@@ -61,4 +63,5 @@ bintray {
     }
 }
 
+buildZip.dependsOn { check }
 bintrayUpload.dependsOn { buildZip }
